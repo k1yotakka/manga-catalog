@@ -43,3 +43,54 @@ func CreateManga(c *fiber.Ctx) error {
 
 	return c.Status(201).JSON(manga)
 }
+
+func GetMangaByID(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var manga models.Manga
+
+	if err := database.DB.First(&manga, id).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Манга не найдена"})
+	}
+
+	return c.JSON(manga)
+}
+
+func UpdateManga(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var manga models.Manga
+
+	if err := database.DB.First(&manga, id).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Манга не найдена"})
+	}
+
+	var updatedData models.Manga
+	if err := c.BodyParser(&updatedData); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Неверный формат JSON"})
+	}
+
+	manga.Title = updatedData.Title
+	manga.Description = updatedData.Description
+	manga.Genre = updatedData.Genre
+	manga.Cover = updatedData.Cover
+
+	if err := database.DB.Save(&manga).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Ошибка при обновлении манги"})
+	}
+
+	return c.JSON(manga)
+}
+
+func DeleteManga(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var manga models.Manga
+
+	if err := database.DB.First(&manga, id).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Манга не найдена"})
+	}
+
+	if err := database.DB.Delete(&manga).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Ошибка при удалении манги"})
+	}
+
+	return c.JSON(fiber.Map{"message": "Манга удалена успешно"})
+}
