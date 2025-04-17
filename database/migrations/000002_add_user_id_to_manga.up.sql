@@ -1,0 +1,3 @@
+ALTER TABLE mangas ADD COLUMN user_id INT REFERENCES users(id) ON DELETE CASCADE;
+UPDATE mangas SET user_id = 3;
+ALTER TABLE mangas ALTER COLUMN user_id SET NOT NULL;
