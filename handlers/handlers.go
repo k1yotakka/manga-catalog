@@ -117,3 +117,74 @@ func DeleteManga(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Манга успешно удалена"})
 }
+
+func AddToFavorites(c *gin.Context) {
+	userID := c.MustGet("user_id").(uint)
+	mangaIDStr := c.Param("id")
+	mangaID, err := strconv.Atoi(mangaIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный ID манги"})
+		return
+	}
+
+	var manga models.Manga
+	if err := database.DB.First(&manga, mangaID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Манга не найдена"})
+		return
+	}
+
+	var existing models.Favorite
+	err = database.DB.Where("user_id = ? AND manga_id = ?", userID, mangaID).First(&existing).Error
+	if err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Манга уже в избранном"})
+		return
+	}
+
+	favorite := models.Favorite{
+		UserID:  userID,
+		MangaID: uint(mangaID),
+	}
+
+	if err := database.DB.Create(&favorite).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при добавлении в избранное"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Манга добавлена в избранное"})
+}
+
+func GetFavorites(c *gin.Context) {
+	userID := c.MustGet("user_id").(uint)
+	var favorites []models.Favorite
+	if err := database.DB.Where("user_id = ?", userID).Find(&favorites).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении избранного"})
+		return
+	}
+
+	var mangaList []models.Manga
+	for _, fav := range favorites {
+		var manga models.Manga
+		if err := database.DB.First(&manga, fav.MangaID).Error; err == nil {
+			mangaList = append(mangaList, manga)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"favorites": mangaList})
+}
+
+func RemoveFromFavorites(c *gin.Context) {
+	userID := c.MustGet("user_id").(uint)
+	mangaIDStr := c.Param("id")
+	mangaID, err := strconv.Atoi(mangaIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный ID манги"})
+		return
+	}
+
+	if err := database.DB.Where("user_id = ? AND manga_id = ?", userID, mangaID).Delete(&models.Favorite{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при удалении из избранного"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Манга удалена из избранного"})
+}

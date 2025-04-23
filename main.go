@@ -44,6 +44,10 @@ func main() {
 
 		api.POST("/manga/:id/comments", handlers.AddComment)
 		api.GET("/manga/:id/comments", handlers.GetComments)
+
+		api.POST("/manga/:id/favorite", handlers.AddToFavorites)
+		api.GET("/favorites", handlers.GetFavorites)
+		api.DELETE("/manga/:id/favorite", handlers.RemoveFromFavorites)
 	}
 
 	r.Run(":8080")
