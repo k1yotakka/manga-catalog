@@ -1,1 +1,0 @@
-ALTER TABLE manga DROP COLUMN user_id;

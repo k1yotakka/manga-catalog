@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"manga-catalog/database"
 	"manga-catalog/handlers"
+	"manga-catalog/middleware"
+	"manga-catalog/models"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -157,4 +159,75 @@ func TestUpdateMangaNotFound(t *testing.T) {
 
 	router.ServeHTTP(resp, req)
 	assert.Equal(t, http.StatusNotFound, resp.Code)
+}
+
+func getTokenAndMangaID(t *testing.T) (string, uint) {
+	router := setupRouter()
+
+	username := fmt.Sprintf("favuser_%d", time.Now().UnixNano())
+	password := "pass123"
+	creds := map[string]string{"username": username, "password": password}
+	body, _ := json.Marshal(creds)
+
+	// Регистрация
+	req, _ := http.NewRequest("POST", "/register", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+	assert.Equal(t, http.StatusCreated, resp.Code)
+
+	// Логин
+	req, _ = http.NewRequest("POST", "/login", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp = httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+	assert.Equal(t, http.StatusOK, resp.Code)
+
+	var loginResp map[string]string
+	json.Unmarshal(resp.Body.Bytes(), &loginResp)
+	token := loginResp["token"]
+
+	// Добавляем мангу в БД напрямую
+	manga := models.Manga{
+		Title:       "Test Favorite Manga",
+		Description: "Fav desc",
+		Genre:       "FavGenre",
+		Cover:       "cover.jpg",
+	}
+	database.DB.Create(&manga)
+
+	return token, manga.ID
+}
+
+func setupFavoriteRouter() *gin.Engine {
+	r := gin.Default()
+	api := r.Group("/api")
+	api.Use(middleware.AuthMiddleware())
+	{
+		api.POST("/manga/:id/favorite", handlers.AddToFavorites)
+		api.GET("/favorites", handlers.GetFavorites)
+	}
+	return r
+}
+
+func TestAddGetFavorite(t *testing.T) {
+	token, mangaID := getTokenAndMangaID(t)
+	router := setupFavoriteRouter()
+
+	req, _ := http.NewRequest("POST", fmt.Sprintf("/api/manga/%d/favorite", mangaID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+	assert.Equal(t, http.StatusCreated, resp.Code)
+
+	req, _ = http.NewRequest("GET", "/api/favorites", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp = httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+	assert.Equal(t, http.StatusOK, resp.Code)
+
+	var result map[string][]models.Manga
+	_ = json.Unmarshal(resp.Body.Bytes(), &result)
+	assert.GreaterOrEqual(t, len(result["favorites"]), 1)
+
 }

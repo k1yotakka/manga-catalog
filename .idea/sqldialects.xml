@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="SqlDialectMappings">
-    <file url="file://$PROJECT_DIR$/database/migrations/000002_add_user_id_to_manga.down.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/database/migrations/000002_add_user_id_to_manga.up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/database/migrations/00001_init.down.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/database/migrations/00001_init.up.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/database/migrations/20250417035056_remove_user_id_from_manga.down.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/database/migrations/20250417035056_remove_user_id_from_manga.up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/database/migrations/20250423022530_create_favorites_table.down.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/database/migrations/20250423022530_create_favorites_table.up.sql" dialect="PostgreSQL" />
   </component>
